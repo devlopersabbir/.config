@@ -1,0 +1,8 @@
+2026-08-10T15:39:08+06:00 [32m[INFO][0m Starting VPSM API server on 127.0.0.1:8080
+2026-08-10T15:39:38+06:00 [32m[INFO][0m GET 127.0.0.1 /? | Status: 200 | Latency: 7.809458ms | IP: 127.0.0.1
+2026-08-10T15:39:50+06:00 [32m[INFO][0m GET 127.0.0.1 /terminal/preferences? | Status: 200 | Latency: 1.32375ms | IP: 127.0.0.1
+2026-08-10T15:39:50+06:00 [32m[INFO][0m GET 127.0.0.1 /terminal/preferences? | Status: 200 | Latency: 3.355875ms | IP: 127.0.0.1
+2026-08-10T15:39:50+06:00 [32m[INFO][0m GET 127.0.0.1 /servers/0/history? | Status: 200 | Latency: 988.708µs | IP: 127.0.0.1
+2026-08-10T15:39:50+06:00 [32m[INFO][0m GET 127.0.0.1 /servers/0/history? | Status: 200 | Latency: 1.201042ms | IP: 127.0.0.1
+2026-08-10T15:43:51+06:00 [32m[INFO][0m GET 127.0.0.1 /servers/8? | Status: 200 | Latency: 2.523333ms | IP: 127.0.0.1
+2026-08-10T15:43:51+06:00 [32m[INFO][0m GET 127.0.0.1 /servers/8/history? | Status: 200 | Latency: 470.542µs | IP: 127.0.0.1

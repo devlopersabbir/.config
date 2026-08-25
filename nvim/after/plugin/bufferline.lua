@@ -1,0 +1,22 @@
+-- -- Plugin Setup Configuration - Bufferline
+-- require("bufferline").setup({
+-- 	options = {
+-- 		show_tab_indicators = false,
+-- 		show_duplicate_prefix = false,
+-- 		offsets = {
+-- 			{
+-- 				filetype = "NvimTree",
+-- 				text = "File Explorer",
+-- 				text_align = "left",
+-- 				separator = true,
+-- 			},
+-- 		},
+-- 		show_buffer_close_icons = false,
+-- 		show_close_icon = false,
+-- 	},
+-- })
+--
+-- Dedicated Keymaps for this plugin
+-- vim.keymap.set("n", "<S-l>", "<cmd>BufferLineCycleNext<cr>", { silent = true, desc = "Bufferline: Next" })
+-- vim.keymap.set("n", "<S-h>", "<cmd>BufferLineCyclePrev<cr>", { silent = true, desc = "Bufferline: Prev" })
+-- vim.keymap.set("n", "<leader>x", "<cmd>bdelete<cr>", { silent = true, desc = "Bufferline: Close current" })
