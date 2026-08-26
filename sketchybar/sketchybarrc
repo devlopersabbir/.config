@@ -74,19 +74,62 @@ sketchybar --add item clock center \
     update_freq=5 \
     script="$CONFIG_DIR/plugins/clock.sh"
 
-############## RIGHT: CPU GRAPH ##############
-sketchybar --add graph cpu.graph right 80 \
-  --set cpu.graph \
-    graph.color=$ACCENT_COLOR \
-    graph.fill_color=0x357aa2f7 \
-    graph.line_width=1.5 \
-    icon= \
-    icon.color=$ACCENT_COLOR \
+############## RIGHT: DISK USAGE ##############
+sketchybar --add item disk right \
+  --set disk \
+    icon=󰋊 \
+    icon.color=0xff7dcfff \
+    icon.font="JetBrainsMono Nerd Font:Bold:13.0" \
     icon.padding_left=8 \
     icon.padding_right=4 \
+    label="---" \
     label.font="JetBrainsMono Nerd Font:Bold:11.0" \
     label.color=$TEXT_COLOR \
-    label.padding_left=4 \
+    label.padding_left=2 \
+    label.padding_right=8 \
+    background.drawing=on \
+    background.color=$BG_ITEM_CONTAINER \
+    background.corner_radius=8 \
+    background.height=26 \
+    background.padding_left=4 \
+    background.padding_right=4 \
+    update_freq=30 \
+    script="$CONFIG_DIR/plugins/disk.sh"
+
+############## RIGHT: RAM USAGE ##############
+sketchybar --add item ram right \
+  --set ram \
+    icon=󰘚 \
+    icon.color=0xffbb9af7 \
+    icon.font="JetBrainsMono Nerd Font:Bold:13.0" \
+    icon.padding_left=8 \
+    icon.padding_right=4 \
+    label="---" \
+    label.font="JetBrainsMono Nerd Font:Bold:11.0" \
+    label.color=$TEXT_COLOR \
+    label.padding_left=2 \
+    label.padding_right=8 \
+    background.drawing=on \
+    background.color=$BG_ITEM_CONTAINER \
+    background.corner_radius=8 \
+    background.height=26 \
+    background.padding_left=4 \
+    background.padding_right=4 \
+    update_freq=3 \
+    script="$CONFIG_DIR/plugins/ram.sh"
+
+############## RIGHT: CPU USAGE ##############
+sketchybar --add item cpu right \
+  --set cpu \
+    icon= \
+    icon.color=$ACCENT_COLOR \
+    icon.font="JetBrainsMono Nerd Font:Bold:13.0" \
+    icon.padding_left=8 \
+    icon.padding_right=4 \
+    label="---" \
+    label.font="JetBrainsMono Nerd Font:Bold:11.0" \
+    label.color=$TEXT_COLOR \
+    label.padding_left=2 \
     label.padding_right=8 \
     background.drawing=on \
     background.color=$BG_ITEM_CONTAINER \
@@ -141,8 +184,11 @@ sketchybar --add item gold right \
     update_freq=1 \
     script="$CONFIG_DIR/plugins/gold.sh"
 
+############## START LIVE STREAM DAEMON (WATCHING MODE) ##############
+"$CONFIG_DIR/plugins/live_stream.sh" &
 
 ############## FINALIZE CONFIGURATION ##############
 sketchybar --update
 
 echo "SketchyBar configuration loaded successfully."
+
