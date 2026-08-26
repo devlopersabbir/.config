@@ -52,7 +52,7 @@ for sid in 1 2 3 4 5 6 7 8 9 10; do
       background.height=24 \
       background.padding_left=2 \
       background.padding_right=2 \
-      click_script="yabai -m space --focus $sid" \
+      click_script="" \
       script="$CONFIG_DIR/plugins/space.sh"
 done
 
@@ -96,6 +96,51 @@ sketchybar --add graph cpu.graph right 80 \
     background.padding_right=4 \
     update_freq=2 \
     script="$CONFIG_DIR/plugins/cpu.sh"
+
+############## RIGHT: BTC PRICE ##############
+sketchybar --add item btc right \
+  --set btc \
+    icon= \
+    icon.color=0xfff7931a \
+    icon.font="JetBrainsMono Nerd Font:Bold:13.0" \
+    icon.padding_left=8 \
+    icon.padding_right=4 \
+    label="---" \
+    label.font="JetBrainsMono Nerd Font:Bold:11.0" \
+    label.color=$TEXT_COLOR \
+    label.padding_left=2 \
+    label.padding_right=8 \
+    background.drawing=on \
+    background.color=$BG_ITEM_CONTAINER \
+    background.corner_radius=8 \
+    background.height=26 \
+    background.padding_left=4 \
+    background.padding_right=4 \
+    update_freq=1 \
+    script="$CONFIG_DIR/plugins/btc.sh"
+
+############## RIGHT: GOLD PRICE ##############
+sketchybar --add item gold right \
+  --set gold \
+    icon=󰆚 \
+    icon.color=0xfff9e2af \
+    icon.font="JetBrainsMono Nerd Font:Bold:13.0" \
+    icon.padding_left=8 \
+    icon.padding_right=4 \
+    label="---" \
+    label.font="JetBrainsMono Nerd Font:Bold:11.0" \
+    label.color=$TEXT_COLOR \
+    label.padding_left=2 \
+    label.padding_right=8 \
+    background.drawing=on \
+    background.color=$BG_ITEM_CONTAINER \
+    background.corner_radius=8 \
+    background.height=26 \
+    background.padding_left=4 \
+    background.padding_right=4 \
+    update_freq=1 \
+    script="$CONFIG_DIR/plugins/gold.sh"
+
 
 ############## FINALIZE CONFIGURATION ##############
 sketchybar --update

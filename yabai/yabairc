@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 # default layout (can be bsp, stack or float)
 yabai -m config layout bsp
 
@@ -10,6 +12,7 @@ yabai -m config bottom_padding 8
 yabai -m config left_padding 8
 yabai -m config right_padding 8
 yabai -m config window_gap 8
+yabai -m config window_animation_duration 0.0
 
 # center mouse on window with focus
 yabai -m config mouse_follows_focus on
@@ -21,11 +24,13 @@ yabai -m config mouse_action1 move
 # set modifier + right-click drag to resize window
 yabai -m config mouse_action2 resize
 
-
 # when window is dropped in center of another window, swap them (on edges it will split it)
 yabai -m mouse_drop_action swap
 
+# Window management rules
 yabai -m rule --add app="^System Settings$" manage=off
 yabai -m rule --add app="^Calculator$" manage=off
 yabai -m rule --add app="^Karabiner-Elements$" manage=off
 
+# Automatically ensure 10 workspaces on startup
+"$HOME/.config/yabai/scripts/space_nav.sh" ensure &
