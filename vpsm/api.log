@@ -1,2 +1,0 @@
-2026-08-10T15:45:24+06:00 [32m[INFO][0m Starting VPSM API server on 127.0.0.1:8080
-2026-08-10T15:45:24+06:00 [32m[INFO][0m API server failed: listen tcp 127.0.0.1:8080: bind: address already in use
