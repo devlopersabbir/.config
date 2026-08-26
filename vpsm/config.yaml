@@ -1,0 +1,14 @@
+database:
+  driver: sqlite
+  path: /Users/anonymous/.local/share/vpsm/vpsm.db
+api:
+  enabled: true
+  host: 127.0.0.1
+  port: 8080
+  mode: local
+  global_url: http://127.0.0.1:8080
+ssh:
+  timeout: 10s
+logging:
+  level: info
+  format: pretty
