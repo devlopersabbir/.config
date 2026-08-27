@@ -56,8 +56,8 @@ cmd - h : yabai -m window --focus west
 cmd - l : yabai -m window --focus east
 
 # change focus between external displays (left and right)
-ctrl - h: yabai -m display --focus west
-ctrl - l: yabai -m display --focus east
+ctrl + alt - h : yabai -m display --focus west
+ctrl + alt - l : yabai -m display --focus east
 
 
 
@@ -136,17 +136,23 @@ shift + cmd - n : yabai -m window --space next;
 # WINDOW RESIZING
 ############################
 
-# increase window size (width)
-alt + shift - l : yabai -m window --resize left:-50:0; yabai -m window --resize right:50:0
+# expand / increase window size (width - left & right)
+ctrl - l : yabai -m window --resize left:-50:0 2>/dev/null; yabai -m window --resize right:50:0 2>/dev/null
 
-# decrease window size (width)
-alt + shift - h : yabai -m window --resize left:50:0; yabai -m window --resize right:-50:0
+# shrink / decrease window size (width - left & right)
+ctrl - h : yabai -m window --resize left:50:0 2>/dev/null; yabai -m window --resize right:-50:0 2>/dev/null
 
 # increase window size (height)
-alt + shift - k : yabai -m window --resize top:-50:0; yabai -m window --resize bottom:50:0
+ctrl - k : yabai -m window --resize top:-50:0 2>/dev/null; yabai -m window --resize bottom:50:0 2>/dev/null
 
 # decrease window size (height)
-alt + shift - j : yabai -m window --resize bottom:50:0; yabai -m window --resize top:-50:0
+ctrl - j : yabai -m window --resize bottom:-50:0 2>/dev/null; yabai -m window --resize top:50:0 2>/dev/null
+
+# fallback / alternative shortcuts (Alt + Shift)
+alt + shift - l : yabai -m window --resize left:-50:0 2>/dev/null; yabai -m window --resize right:50:0 2>/dev/null
+alt + shift - h : yabai -m window --resize left:50:0 2>/dev/null; yabai -m window --resize right:-50:0 2>/dev/null
+alt + shift - k : yabai -m window --resize top:-50:0 2>/dev/null; yabai -m window --resize bottom:50:0 2>/dev/null
+alt + shift - j : yabai -m window --resize bottom:-50:0 2>/dev/null; yabai -m window --resize top:50:0 2>/dev/null
 
 
 ############################
