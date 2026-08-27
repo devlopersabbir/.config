@@ -130,14 +130,25 @@ func (s *State) UpdateCandle(open, close float64) {
 	s.PendingRender = true
 }
 
-// SetAnalysisCandles sets the full historical OHLC analysis data.
+// SetAnalysisCandles sets or updates historical OHLC analysis data.
 func (s *State) SetAnalysisCandles(candles []CandleBar) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	if len(candles) > 0 {
+	if len(candles) >= 18 {
 		s.Candles = candles
 		s.CandleOpen = candles[len(candles)-1].Open
+	} else if len(candles) > 0 {
+		for _, c := range candles {
+			if len(s.Candles) > 0 {
+				s.Candles[len(s.Candles)-1] = c
+			} else {
+				s.Candles = append(s.Candles, c)
+			}
+		}
+		if len(s.Candles) > 0 {
+			s.CandleOpen = s.Candles[len(s.Candles)-1].Open
+		}
 	}
 	s.PendingRender = true
 }

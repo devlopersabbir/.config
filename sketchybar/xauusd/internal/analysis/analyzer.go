@@ -13,7 +13,7 @@ import (
 	"xauusd/internal/market"
 )
 
-// Analyzer manages periodic OHLC candle fetching for historical analysis.
+// Analyzer manages periodic OHLC candle fetching from Bybit V5 REST API.
 type Analyzer struct {
 	state  *market.State
 	client *http.Client
@@ -47,23 +47,24 @@ func (a *Analyzer) Start(ctx context.Context) {
 	}
 }
 
-// Refresh fetches the latest 15m OHLC klines from the REST API.
+// Refresh fetches the latest 5m OHLC klines from Bybit V5 REST API.
 func (a *Analyzer) Refresh(ctx context.Context) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, config.OhlcURL, nil)
 	if err != nil {
-		log.Printf("OHLC request creation failed: %v", err)
+		log.Printf("Bybit OHLC request creation failed: %v", err)
 		return
 	}
+	req.Header.Set("User-Agent", "Mozilla/5.0")
 
 	resp, err := a.client.Do(req)
 	if err != nil {
-		log.Printf("OHLC fetch error: %v", err)
+		log.Printf("Bybit OHLC fetch error: %v", err)
 		return
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		log.Printf("OHLC HTTP error: %d", resp.StatusCode)
+		log.Printf("Bybit OHLC HTTP error: %d", resp.StatusCode)
 		return
 	}
 
@@ -72,43 +73,49 @@ func (a *Analyzer) Refresh(ctx context.Context) {
 		return
 	}
 
-	// Format: [ [openTime, open, high, low, close, volume, ...], ... ]
-	var rawKlines [][]interface{}
-	if err := json.Unmarshal(body, &rawKlines); err != nil {
-		log.Printf("OHLC decode error: %v", err)
+	var bybitResp struct {
+		RetCode int    `json:"retCode"`
+		RetMsg  string `json:"retMsg"`
+		Result  struct {
+			Symbol string     `json:"symbol"`
+			List   [][]string `json:"list"`
+		} `json:"result"`
+	}
+
+	if err := json.Unmarshal(body, &bybitResp); err != nil {
+		log.Printf("Bybit OHLC decode error: %v", err)
 		return
 	}
 
-	if len(rawKlines) == 0 {
+	rawList := bybitResp.Result.List
+	if len(rawList) == 0 {
 		return
 	}
 
+	// Bybit returns klines in reverse chronological order (newest first).
+	// We reverse them so the oldest is at index 0 and latest is at the end.
 	var candles []market.CandleBar
-	for _, bar := range rawKlines {
+	for i := len(rawList) - 1; i >= 0; i-- {
+		bar := rawList[i]
 		if len(bar) >= 5 {
-			openStr, ok1 := bar[1].(string)
-			highStr, ok2 := bar[2].(string)
-			lowStr, ok3 := bar[3].(string)
-			closeStr, ok4 := bar[4].(string)
+			o, err1 := strconv.ParseFloat(bar[1], 64)
+			h, err2 := strconv.ParseFloat(bar[2], 64)
+			l, err3 := strconv.ParseFloat(bar[3], 64)
+			c, err4 := strconv.ParseFloat(bar[4], 64)
 
-			if ok1 && ok2 && ok3 && ok4 {
-				oVal, err1 := strconv.ParseFloat(openStr, 64)
-				hVal, err2 := strconv.ParseFloat(highStr, 64)
-				lVal, err3 := strconv.ParseFloat(lowStr, 64)
-				cVal, err4 := strconv.ParseFloat(closeStr, 64)
-
-				if err1 == nil && err2 == nil && err3 == nil && err4 == nil {
-					candles = append(candles, market.CandleBar{
-						Open:  oVal,
-						High:  hVal,
-						Low:   lVal,
-						Close: cVal,
-					})
-				}
+			if err1 == nil && err2 == nil && err3 == nil && err4 == nil && o > 0 && c > 0 {
+				candles = append(candles, market.CandleBar{
+					Open:  o,
+					High:  h,
+					Low:   l,
+					Close: c,
+				})
 			}
 		}
 	}
 
-	a.state.SetAnalysisCandles(candles)
-	log.Printf("5m analysis refreshed: %d candles loaded", len(candles))
+	if len(candles) > 0 {
+		a.state.SetAnalysisCandles(candles)
+		log.Printf("Bybit 5m analysis refreshed: %d candles loaded for %s", len(candles), config.Symbol)
+	}
 }

@@ -2,43 +2,50 @@ package market
 
 import "encoding/json"
 
-// BinanceCombined represents the wrapper for combined Binance WebSocket streams.
-type BinanceCombined struct {
-	Stream string          `json:"stream"`
-	Data   json.RawMessage `json:"data"`
+// BybitWsMessage represents a generic message from Bybit V5 WebSocket.
+type BybitWsMessage struct {
+	Topic string          `json:"topic"`
+	Type  string          `json:"type"`
+	Ts    int64           `json:"ts"`
+	Data  json.RawMessage `json:"data"`
 }
 
-// BinanceBookTicker represents the real-time best bid and ask order book stream.
-type BinanceBookTicker struct {
-	UpdateID int64  `json:"u"`
-	Symbol   string `json:"s"`
-	BidPrice string `json:"b"`
-	BidQty   string `json:"B"`
-	AskPrice string `json:"a"`
-	AskQty   string `json:"A"`
+// BybitTickerData represents the ticker update payload.
+type BybitTickerData struct {
+	Symbol    string `json:"symbol"`
+	LastPrice string `json:"lastPrice"`
+	Bid1Price string `json:"bid1Price"`
+	Ask1Price string `json:"ask1Price"`
 }
 
-// BinanceTrade represents an individual executed market trade.
-type BinanceTrade struct {
-	Event     string `json:"e"`
-	Symbol    string `json:"s"`
-	Price     string `json:"p"`
-	Quantity  string `json:"q"`
-	TradeTime int64  `json:"T"`
+// BybitTradeData represents an individual executed trade.
+type BybitTradeData struct {
+	Price string `json:"p"`
+	Side  string `json:"S"`
+	Size  string `json:"v"`
+	Time  int64  `json:"T"`
 }
 
-// BinanceKlineStream represents real-time kline/candlestick updates.
-type BinanceKlineStream struct {
-	Event string `json:"e"`
-	Kline struct {
-		OpenTime float64 `json:"t"`
-		Open     string  `json:"o"`
-		High     string  `json:"h"`
-		Low      string  `json:"l"`
-		Close    string  `json:"c"`
-		Volume   string  `json:"v"`
-		IsClosed bool    `json:"x"`
-	} `json:"k"`
+// BybitKlineData represents real-time kline/candlestick updates.
+type BybitKlineData struct {
+	Start     int64  `json:"start"`
+	End       int64  `json:"end"`
+	Interval  string `json:"interval"`
+	Open      string `json:"open"`
+	Close     string `json:"close"`
+	High      string `json:"high"`
+	Low       string `json:"low"`
+	Volume    string `json:"volume"`
+	Turnover  string `json:"turnover"`
+	Confirm   bool   `json:"confirm"`
+	Timestamp int64  `json:"timestamp"`
+}
+
+// BybitOrderbookData represents orderbook depth update.
+type BybitOrderbookData struct {
+	Symbol string     `json:"s"`
+	Bids   [][]string `json:"b"`
+	Asks   [][]string `json:"a"`
 }
 
 // CandleBar represents a single OHLC candlestick for charting.

@@ -3,14 +3,17 @@ package config
 import "time"
 
 const (
-	// Symbol is the target asset: Spot Gold backed 1:1 by London Good Delivery gold bullion
-	Symbol = "PAXGUSDT"
+	// Symbol is the target asset: Gold / US Dollar Perpetual (XAUUSDT)
+	Symbol = "XAUUSDT"
 
-	// WsURL is the Binance WebSocket combined stream for real-time order book ticks, live trades, and 5m klines
-	WsURL = "wss://stream.binance.com:9443/stream?streams=paxgusdt@bookTicker/paxgusdt@trade/paxgusdt@kline_5m"
+	// WsURL is the Bybit V5 Public Linear WebSocket endpoint for sub-second live market ticks
+	WsURL = "wss://stream.bybit.com/v5/public/linear"
 
-	// OhlcURL is the Binance REST API for 5m candle analytical data & historical sparkline
-	OhlcURL = "https://api.binance.com/api/v3/klines?symbol=PAXGUSDT&interval=5m&limit=30"
+	// OhlcURL is the Bybit V5 REST API for 5m candle analytical data & historical chart
+	OhlcURL = "https://api.bybit.com/v5/market/kline?category=linear&symbol=XAUUSDT&interval=5&limit=30"
+
+	// TickerURL is the Bybit V5 REST API for 24h ticker snapshot
+	TickerURL = "https://api.bybit.com/v5/market/tickers?category=linear&symbol=XAUUSDT"
 
 	// CacheFile is the local cache path for SketchyBar plugin scripts
 	CacheFile = "/tmp/sketchybar_gold_price"
@@ -18,8 +21,8 @@ const (
 	// AnalysisRefresh is the background interval for refreshing 5m OHLC analytical data
 	AnalysisRefresh = 30 * time.Second
 
-	// MinRenderInterval is the throttling interval between SketchyBar CLI updates to keep CPU at ~0%
-	MinRenderInterval = 150 * time.Millisecond
+	// MinRenderInterval is the throttling interval between SketchyBar CLI updates
+	MinRenderInterval = 100 * time.Millisecond
 
 	// NumCandleBars is the number of individual candlestick bars displayed in the chart
 	NumCandleBars = 18
