@@ -15,7 +15,7 @@ type State struct {
 	Ask        float64
 	Direction  string // UP / DOWN / FLAT
 	CandleOpen float64
-	History    []float64
+	Candles    []CandleBar
 	Connected  bool
 
 	LastTick      time.Time
@@ -60,6 +60,15 @@ func (s *State) UpdateBookTick(bid, ask float64) {
 	}
 
 	s.PrevPrice = prev
+	if len(s.Candles) > 0 {
+		s.Candles[len(s.Candles)-1].Close = mid
+		if mid > s.Candles[len(s.Candles)-1].High {
+			s.Candles[len(s.Candles)-1].High = mid
+		}
+		if mid < s.Candles[len(s.Candles)-1].Low {
+			s.Candles[len(s.Candles)-1].Low = mid
+		}
+	}
 	s.PendingRender = true
 }
 
@@ -90,10 +99,19 @@ func (s *State) UpdateTradeTick(price float64) {
 	}
 
 	s.PrevPrice = prev
+	if len(s.Candles) > 0 {
+		s.Candles[len(s.Candles)-1].Close = price
+		if price > s.Candles[len(s.Candles)-1].High {
+			s.Candles[len(s.Candles)-1].High = price
+		}
+		if price < s.Candles[len(s.Candles)-1].Low {
+			s.Candles[len(s.Candles)-1].Low = price
+		}
+	}
 	s.PendingRender = true
 }
 
-// UpdateCandle updates the current 15m candle open price and historical close in real-time.
+// UpdateCandle updates the current 15m candle open price and close in real-time.
 func (s *State) UpdateCandle(open, close float64) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -101,21 +119,25 @@ func (s *State) UpdateCandle(open, close float64) {
 	if open > 0 {
 		s.CandleOpen = open
 	}
-	if len(s.History) > 0 && close > 0 {
-		s.History[len(s.History)-1] = close
+	if len(s.Candles) > 0 {
+		if open > 0 {
+			s.Candles[len(s.Candles)-1].Open = open
+		}
+		if close > 0 {
+			s.Candles[len(s.Candles)-1].Close = close
+		}
 	}
+	s.PendingRender = true
 }
 
-// SetAnalysisHistory sets the full historical OHLC analysis data.
-func (s *State) SetAnalysisHistory(open float64, history []float64) {
+// SetAnalysisCandles sets the full historical OHLC analysis data.
+func (s *State) SetAnalysisCandles(candles []CandleBar) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	if open > 0 {
-		s.CandleOpen = open
-	}
-	if len(history) > 0 {
-		s.History = history
+	if len(candles) > 0 {
+		s.Candles = candles
+		s.CandleOpen = candles[len(candles)-1].Open
 	}
 	s.PendingRender = true
 }
@@ -134,7 +156,7 @@ type Snapshot struct {
 	CandleOpen   float64
 	Direction    string
 	Connected    bool
-	History      []float64
+	Candles      []CandleBar
 	ShouldRender bool
 }
 
@@ -149,15 +171,15 @@ func (s *State) PrepareRender() Snapshot {
 		s.LastRender = time.Now()
 	}
 
-	histCopy := make([]float64, len(s.History))
-	copy(histCopy, s.History)
+	candlesCopy := make([]CandleBar, len(s.Candles))
+	copy(candlesCopy, s.Candles)
 
 	return Snapshot{
 		Price:        s.Price,
 		CandleOpen:   s.CandleOpen,
 		Direction:    s.Direction,
 		Connected:    s.Connected,
-		History:      histCopy,
+		Candles:      candlesCopy,
 		ShouldRender: shouldRender,
 	}
 }

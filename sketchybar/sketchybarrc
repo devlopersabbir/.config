@@ -147,31 +147,104 @@ sketchybar --add item cpu right \
     script="$CONFIG_DIR/plugins/cpu.sh"
 
 
-############## RIGHT: GOLD PRICE ##############
+############## RIGHT: GOLD PRICE (MODULAR BRACKET) ##############
 
 # IMPORTANT:
 # Gold is updated in real time by the Go market daemon (xauusd),
 # receiving continuous sub-second live WebSocket market ticks.
 
-sketchybar --add item gold right \
-  --set gold \
+# In SketchyBar, items with position 'right' are added from right to left.
+# To display on screen from Left-to-Right as:
+# (icon $price +0.05% ▲ │ graph │ ↑ BULL)
+# we declare them in reverse order (trend -> sep2 -> bar.12..bar.1 -> sep1 -> change -> price -> icon).
+
+sketchybar --add item gold.trend right \
+  --set gold.trend \
+    label="---" \
+    label.font="JetBrainsMono Nerd Font:Bold:11.0" \
+    label.color=$TEXT_COLOR \
+    label.padding_left=3 \
+    label.padding_right=8 \
+    icon.drawing=off \
+    background.drawing=off
+
+sketchybar --add item gold.sep2 right \
+  --set gold.sep2 \
+    label="│" \
+    label.font="JetBrainsMono Nerd Font:Regular:11.0" \
+    label.color=$TEXT_MUTED \
+    label.padding_left=3 \
+    label.padding_right=3 \
+    icon.drawing=off \
+    background.drawing=off
+
+for i in 18 17 16 15 14 13 12 11 10 9 8 7 6 5 4 3 2 1; do
+  sketchybar --add item gold.bar.$i right \
+    --set gold.bar.$i \
+      label=" " \
+      label.font="JetBrainsMono Nerd Font:ExtraBold:14.0" \
+      label.color=$TEXT_MUTED \
+      label.padding_left=1 \
+      label.padding_right=0 \
+      icon.drawing=off \
+      background.drawing=off
+done
+
+sketchybar --add item gold.sep1 right \
+  --set gold.sep1 \
+    label="│" \
+    label.font="JetBrainsMono Nerd Font:Regular:11.0" \
+    label.color=$TEXT_MUTED \
+    label.padding_left=3 \
+    label.padding_right=3 \
+    icon.drawing=off \
+    background.drawing=off
+
+sketchybar --add item gold.change right \
+  --set gold.change \
+    label="---" \
+    label.font="JetBrainsMono Nerd Font:Bold:11.0" \
+    label.color=$TEXT_COLOR \
+    label.padding_left=2 \
+    label.padding_right=4 \
+    icon.drawing=off \
+    background.drawing=off
+
+sketchybar --add item gold.price right \
+  --set gold.price \
+    label="---" \
+    label.font="JetBrainsMono Nerd Font:Bold:11.0" \
+    label.color=$TEXT_COLOR \
+    label.padding_left=2 \
+    label.padding_right=4 \
+    icon.drawing=off \
+    background.drawing=off
+
+sketchybar --add item gold.icon right \
+  --set gold.icon \
     icon=󰆚 \
     icon.color=0xfff9e2af \
     icon.font="JetBrainsMono Nerd Font:Bold:13.0" \
     icon.padding_left=8 \
     icon.padding_right=4 \
-    label="🥇 Connecting..." \
-    label.font="JetBrainsMono Nerd Font:Bold:11.0" \
-    label.color=$TEXT_COLOR \
-    label.padding_left=2 \
-    label.padding_right=8 \
+    label.drawing=off \
+    background.drawing=off
+
+sketchybar --add bracket gold.bracket \
+  gold.icon \
+  gold.price \
+  gold.change \
+  gold.sep1 \
+  gold.bar.1 gold.bar.2 gold.bar.3 gold.bar.4 gold.bar.5 gold.bar.6 gold.bar.7 gold.bar.8 gold.bar.9 gold.bar.10 gold.bar.11 gold.bar.12 gold.bar.13 gold.bar.14 gold.bar.15 gold.bar.16 gold.bar.17 gold.bar.18 \
+  gold.sep2 \
+  gold.trend \
+  --set gold.bracket \
     background.drawing=on \
     background.color=$BG_ITEM_CONTAINER \
     background.corner_radius=8 \
     background.height=26 \
     background.padding_left=4 \
-    background.padding_right=4 \
-    script="$CONFIG_DIR/plugins/gold.sh"
+    background.padding_right=4
 
 
 ############## START XAUUSD GO MARKET DAEMON ##############

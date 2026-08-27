@@ -40,3 +40,11 @@ type BinanceKlineStream struct {
 		IsClosed bool    `json:"x"`
 	} `json:"k"`
 }
+
+// CandleBar represents a single OHLC candlestick for charting.
+type CandleBar struct {
+	Open  float64
+	High  float64
+	Low   float64
+	Close float64
+}

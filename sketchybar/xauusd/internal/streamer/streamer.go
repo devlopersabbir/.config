@@ -112,7 +112,7 @@ func (s *Streamer) connectAndStream(ctx context.Context) error {
 					s.state.UpdateTradeTick(tPrice)
 				}
 			}
-		} else if strings.Contains(combined.Stream, "kline_15m") {
+		} else if strings.Contains(combined.Stream, "kline_5m") {
 			var ks market.BinanceKlineStream
 			if err := json.Unmarshal(combined.Data, &ks); err == nil {
 				openP, _ := strconv.ParseFloat(ks.Kline.Open, 64)

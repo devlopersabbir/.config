@@ -83,25 +83,32 @@ func (a *Analyzer) Refresh(ctx context.Context) {
 		return
 	}
 
-	var history []float64
+	var candles []market.CandleBar
 	for _, bar := range rawKlines {
 		if len(bar) >= 5 {
-			if closeStr, ok := bar[4].(string); ok {
-				if cVal, err := strconv.ParseFloat(closeStr, 64); err == nil {
-					history = append(history, cVal)
+			openStr, ok1 := bar[1].(string)
+			highStr, ok2 := bar[2].(string)
+			lowStr, ok3 := bar[3].(string)
+			closeStr, ok4 := bar[4].(string)
+
+			if ok1 && ok2 && ok3 && ok4 {
+				oVal, err1 := strconv.ParseFloat(openStr, 64)
+				hVal, err2 := strconv.ParseFloat(highStr, 64)
+				lVal, err3 := strconv.ParseFloat(lowStr, 64)
+				cVal, err4 := strconv.ParseFloat(closeStr, 64)
+
+				if err1 == nil && err2 == nil && err3 == nil && err4 == nil {
+					candles = append(candles, market.CandleBar{
+						Open:  oVal,
+						High:  hVal,
+						Low:   lVal,
+						Close: cVal,
+					})
 				}
 			}
 		}
 	}
 
-	lastBar := rawKlines[len(rawKlines)-1]
-	var currentOpen float64
-	if openStr, ok := lastBar[1].(string); ok {
-		if val, err := strconv.ParseFloat(openStr, 64); err == nil {
-			currentOpen = val
-		}
-	}
-
-	a.state.SetAnalysisHistory(currentOpen, history)
-	log.Printf("15m analysis refreshed: open=%.2f, history_points=%d", currentOpen, len(history))
+	a.state.SetAnalysisCandles(candles)
+	log.Printf("5m analysis refreshed: %d candles loaded", len(candles))
 }

@@ -42,17 +42,9 @@ func (r *Renderer) Start(ctx context.Context) {
 	}
 }
 
-// Render formats and publishes the latest market state to SketchyBar.
+// Render formats and publishes the latest market state to SketchyBar with individual bar coloring.
 func (r *Renderer) Render(snap market.Snapshot) {
 	candleChange := indicator.CalculateCandleChange(snap.Price, snap.CandleOpen)
-
-	// Determine label color
-	color := config.ColorNeutral
-	if candleChange > 0.0001 {
-		color = config.ColorGreen
-	} else if candleChange < -0.0001 {
-		color = config.ColorRed
-	}
 
 	// Determine direction arrow
 	arrow := "▲"
@@ -64,53 +56,70 @@ func (r *Renderer) Render(snap market.Snapshot) {
 		arrow = "▼"
 	}
 
-	// Compute analytical indicators
-	sparkline := indicator.BuildSparkline(snap.History)
-	trend, trendIcon := indicator.CalculateTrend(snap.History)
+	// Change color: only % and arrow change color for bearish/bullish
+	changeColor := config.ColorNeutral
+	if candleChange > 0.0001 {
+		changeColor = config.ColorGreen
+	} else if candleChange < -0.0001 {
+		changeColor = config.ColorRed
+	}
+
+	// Trend indicator and color
+	trend, trendIcon, trendColor := indicator.CalculateTrend(snap.Candles)
+
+	// Compute individual candle bars with green/red colors
+	candleBars := indicator.ComputeCandleBars(snap.Candles, snap.Price, snap.CandleOpen, config.NumCandleBars)
 
 	priceStr := fmt.Sprintf("$%.2f", snap.Price)
-	changeStr := fmt.Sprintf("%+.2f%%", candleChange)
+	changeStr := fmt.Sprintf("%+.2f%% %s", candleChange, arrow)
+	trendStr := fmt.Sprintf("%s %s", trendIcon, trend)
 
-	label := fmt.Sprintf(
-		"%s %s %s │ %s │ %s %s",
-		priceStr,
-		changeStr,
-		arrow,
-		sparkline,
-		trendIcon,
-		trend,
-	)
+	// Build atomic SketchyBar update command
+	args := []string{
+		"--set", "gold.price", "label=" + priceStr, "label.color=" + config.ColorNeutral,
+		"--set", "gold.change", "label=" + changeStr, "label.color=" + changeColor,
+	}
 
-	r.UpdateSketchyBar(label, color)
-	r.WriteCache(label, color)
+	for i, bar := range candleBars {
+		itemName := fmt.Sprintf("gold.bar.%d", i+1)
+		args = append(args, "--set", itemName, "label="+bar.Char, "label.color="+bar.Color)
+	}
+
+	args = append(args, "--set", "gold.trend", "label="+trendStr, "label.color="+trendColor)
+
+	cmd := exec.Command("sketchybar", args...)
+	_ = cmd.Run()
+
+	// Write cache
+	sparkText := ""
+	for _, bar := range candleBars {
+		sparkText += bar.Char
+	}
+	cacheLine := fmt.Sprintf("%s %s │ %s │ %s|%s", priceStr, changeStr, sparkText, trendStr, changeColor)
+	_ = os.WriteFile(config.CacheFile, []byte(cacheLine), 0644)
 }
 
 // RenderDisconnected displays the disconnected / offline status on SketchyBar.
 func (r *Renderer) RenderDisconnected() {
 	price, _ := r.state.GetPrice()
 
-	if price <= 0 {
-		r.UpdateSketchyBar("🥇 Connecting...", config.ColorNeutral)
-		return
+	priceStr := "offline"
+	if price > 0 {
+		priceStr = fmt.Sprintf("$%.2f", price)
 	}
 
-	label := fmt.Sprintf("$%.2f │ offline", price)
-	r.UpdateSketchyBar(label, config.ColorRed)
-}
+	args := []string{
+		"--set", "gold.price", "label=" + priceStr, "label.color=" + config.ColorRed,
+		"--set", "gold.change", "label=---", "label.color=" + config.ColorMuted,
+	}
 
-// UpdateSketchyBar invokes the sketchybar CLI to update the gold item.
-func (r *Renderer) UpdateSketchyBar(label, color string) {
-	cmd := exec.Command(
-		"sketchybar",
-		"--set", "gold",
-		"label="+label,
-		"label.color="+color,
-	)
+	for i := 1; i <= config.NumCandleBars; i++ {
+		itemName := fmt.Sprintf("gold.bar.%d", i)
+		args = append(args, "--set", itemName, "label= ", "label.color="+config.ColorMuted)
+	}
+
+	args = append(args, "--set", "gold.trend", "label=---", "label.color="+config.ColorMuted)
+
+	cmd := exec.Command("sketchybar", args...)
 	_ = cmd.Run()
-}
-
-// WriteCache writes the current label and color to disk for shell plugins.
-func (r *Renderer) WriteCache(label, color string) {
-	data := label + "|" + color
-	_ = os.WriteFile(config.CacheFile, []byte(data), 0644)
 }
