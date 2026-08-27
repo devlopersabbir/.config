@@ -9,14 +9,16 @@ import (
 type State struct {
 	mu sync.RWMutex
 
-	Price      float64
-	PrevPrice  float64
-	Bid        float64
-	Ask        float64
-	Direction  string // UP / DOWN / FLAT
-	CandleOpen float64
-	Candles    []CandleBar
-	Connected  bool
+	Price         float64
+	PrevPrice     float64
+	Change        float64
+	ChangePct     float64
+	Bid           float64
+	Ask           float64
+	Direction     string // UP / DOWN / FLAT
+	CandleOpen    float64
+	Candles       []CandleBar
+	Connected     bool
 
 	LastTick      time.Time
 	LastRender    time.Time
@@ -30,130 +32,108 @@ func NewState() *State {
 	}
 }
 
-// UpdateBookTick updates the state with the latest bid and ask prices.
-func (s *State) UpdateBookTick(bid, ask float64) {
-	now := time.Now()
-	mid := (bid + ask) / 2.0
-
+// UpdateQuote updates the state with live quote fields received from TradingView.
+func (s *State) UpdateQuote(lp, ch, chp, bid, ask, open, prevClose *float64) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	prev := s.Price
-	s.Bid = bid
-	s.Ask = ask
-	s.Price = mid
+	now := time.Now()
 	s.LastTick = now
 	s.Connected = true
 
-	if prev > 0 {
-		if mid > prev {
+	if bid != nil && *bid > 0 {
+		s.Bid = *bid
+	}
+	if ask != nil && *ask > 0 {
+		s.Ask = *ask
+	}
+	if ch != nil {
+		s.Change = *ch
+	}
+	if chp != nil {
+		s.ChangePct = *chp
+	}
+	if open != nil && *open > 0 {
+		s.CandleOpen = *open
+	}
+
+	if lp != nil && *lp > 0 {
+		prev := s.Price
+		s.Price = *lp
+
+		if prev > 0 {
+			if *lp > prev {
+				s.Direction = "UP"
+			} else if *lp < prev {
+				s.Direction = "DOWN"
+			}
+		} else if s.Change > 0 {
 			s.Direction = "UP"
-		} else if mid < prev {
+		} else if s.Change < 0 {
 			s.Direction = "DOWN"
 		}
-	} else if s.CandleOpen > 0 {
-		if mid >= s.CandleOpen {
-			s.Direction = "UP"
-		} else {
-			s.Direction = "DOWN"
-		}
-	}
 
-	s.PrevPrice = prev
-	if len(s.Candles) > 0 {
-		s.Candles[len(s.Candles)-1].Close = mid
-		if mid > s.Candles[len(s.Candles)-1].High {
-			s.Candles[len(s.Candles)-1].High = mid
-		}
-		if mid < s.Candles[len(s.Candles)-1].Low {
-			s.Candles[len(s.Candles)-1].Low = mid
-		}
-	}
-	s.PendingRender = true
-}
+		s.PrevPrice = prev
 
-// UpdateTradeTick updates the state with the latest executed trade price.
-func (s *State) UpdateTradeTick(price float64) {
-	now := time.Now()
-
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	prev := s.Price
-	s.Price = price
-	s.LastTick = now
-	s.Connected = true
-
-	if prev > 0 {
-		if price > prev {
-			s.Direction = "UP"
-		} else if price < prev {
-			s.Direction = "DOWN"
-		}
-	} else if s.CandleOpen > 0 {
-		if price >= s.CandleOpen {
-			s.Direction = "UP"
-		} else {
-			s.Direction = "DOWN"
-		}
-	}
-
-	s.PrevPrice = prev
-	if len(s.Candles) > 0 {
-		s.Candles[len(s.Candles)-1].Close = price
-		if price > s.Candles[len(s.Candles)-1].High {
-			s.Candles[len(s.Candles)-1].High = price
-		}
-		if price < s.Candles[len(s.Candles)-1].Low {
-			s.Candles[len(s.Candles)-1].Low = price
-		}
-	}
-	s.PendingRender = true
-}
-
-// UpdateCandle updates the current 15m candle open price and close in real-time.
-func (s *State) UpdateCandle(open, close float64) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	if open > 0 {
-		s.CandleOpen = open
-	}
-	if len(s.Candles) > 0 {
-		if open > 0 {
-			s.Candles[len(s.Candles)-1].Open = open
-		}
-		if close > 0 {
-			s.Candles[len(s.Candles)-1].Close = close
-		}
-	}
-	s.PendingRender = true
-}
-
-// SetAnalysisCandles sets or updates historical OHLC analysis data.
-func (s *State) SetAnalysisCandles(candles []CandleBar) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	if len(candles) >= 18 {
-		s.Candles = candles
-		s.CandleOpen = candles[len(candles)-1].Open
-	} else if len(candles) > 0 {
-		for _, c := range candles {
-			if len(s.Candles) > 0 {
-				s.Candles[len(s.Candles)-1] = c
-			} else {
-				s.Candles = append(s.Candles, c)
+		// Update the active candle's close with the latest trade
+		if len(s.Candles) > 0 {
+			lastIdx := len(s.Candles) - 1
+			s.Candles[lastIdx].Close = *lp
+			if *lp > s.Candles[lastIdx].High {
+				s.Candles[lastIdx].High = *lp
+			}
+			if *lp < s.Candles[lastIdx].Low {
+				s.Candles[lastIdx].Low = *lp
 			}
 		}
-		if len(s.Candles) > 0 {
-			s.CandleOpen = s.Candles[len(s.Candles)-1].Open
+	}
+
+	s.PendingRender = true
+}
+
+// SetCandles updates or replaces historical OHLC analysis candles.
+func (s *State) SetCandles(candles []CandleBar) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if len(candles) > 0 {
+		s.Candles = candles
+		if s.Price > 0 {
+			s.Candles[len(s.Candles)-1].Close = s.Price
+		}
+		if s.CandleOpen <= 0 {
+			s.CandleOpen = candles[len(candles)-1].Open
 		}
 	}
 	s.PendingRender = true
 }
 
-// SetConnected marks the WebSocket connection status.
+// UpdateLastCandle updates or appends the active candle bar.
+func (s *State) UpdateLastCandle(candle CandleBar) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if len(s.Candles) == 0 {
+		s.Candles = append(s.Candles, candle)
+	} else {
+		lastIdx := len(s.Candles) - 1
+		if s.Candles[lastIdx].Timestamp == candle.Timestamp {
+			s.Candles[lastIdx] = candle
+		} else if candle.Timestamp > s.Candles[lastIdx].Timestamp {
+			s.Candles = append(s.Candles, candle)
+		} else {
+			s.Candles[lastIdx] = candle
+		}
+	}
+
+	if candle.Close > 0 && s.Price == 0 {
+		s.Price = candle.Close
+	}
+
+	s.PendingRender = true
+}
+
+// SetConnected marks the connection status.
 func (s *State) SetConnected(connected bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -164,6 +144,8 @@ func (s *State) SetConnected(connected bool) {
 // Snapshot retrieves the current state values needed for rendering.
 type Snapshot struct {
 	Price        float64
+	Change       float64
+	ChangePct    float64
 	CandleOpen   float64
 	Direction    string
 	Connected    bool
@@ -187,6 +169,8 @@ func (s *State) PrepareRender() Snapshot {
 
 	return Snapshot{
 		Price:        s.Price,
+		Change:       s.Change,
+		ChangePct:    s.ChangePct,
 		CandleOpen:   s.CandleOpen,
 		Direction:    s.Direction,
 		Connected:    s.Connected,

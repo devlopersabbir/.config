@@ -5,7 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"strconv"
+	"math/rand"
+	"net/http"
 	"strings"
 	"time"
 
@@ -14,7 +15,7 @@ import (
 	"xauusd/internal/market"
 )
 
-// Streamer handles the persistent real-time WebSocket connection to Bybit V5.
+// Streamer handles the persistent real-time WebSocket connection to TradingView.
 type Streamer struct {
 	state *market.State
 }
@@ -37,7 +38,7 @@ func (s *Streamer) Start(ctx context.Context) {
 		default:
 		}
 
-		log.Printf("Connecting to Bybit V5 WebSocket stream (%s)...", config.Symbol)
+		log.Printf("Connecting to TradingView live stream for %s...", config.Symbol)
 
 		err := s.connectAndStream(ctx)
 
@@ -46,7 +47,7 @@ func (s *Streamer) Start(ctx context.Context) {
 		}
 
 		if err != nil {
-			log.Printf("Bybit WebSocket stream error: %v", err)
+			log.Printf("TradingView stream error: %v", err)
 		}
 
 		s.state.SetConnected(false)
@@ -64,48 +65,82 @@ func (s *Streamer) Start(ctx context.Context) {
 	}
 }
 
+func randomSessionID(prefix string) string {
+	const letters = "abcdefghijklmnopqrstuvwxyz0123456789"
+	b := make([]byte, 12)
+	for i := range b {
+		b[i] = letters[rand.Intn(len(letters))]
+	}
+	return prefix + string(b)
+}
+
+func formatMessage(m string, p []interface{}) string {
+	payload, _ := json.Marshal(map[string]interface{}{
+		"m": m,
+		"p": p,
+	})
+	return fmt.Sprintf("~m~%d~m~%s", len(payload), string(payload))
+}
+
 func (s *Streamer) connectAndStream(ctx context.Context) error {
 	dialer := websocket.DefaultDialer
-	dialer.HandshakeTimeout = 5 * time.Second
+	dialer.HandshakeTimeout = 6 * time.Second
 
-	conn, _, err := dialer.DialContext(ctx, config.WsURL, nil)
+	header := http.Header{}
+	header.Set("Origin", "https://www.tradingview.com")
+	header.Set("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)")
+
+	conn, _, err := dialer.DialContext(ctx, config.WsURL, header)
 	if err != nil {
-		return fmt.Errorf("bybit websocket dial failed: %w", err)
+		return fmt.Errorf("tradingview websocket dial failed: %w", err)
 	}
 	defer conn.Close()
 
-	log.Printf("WebSocket connected to Bybit V5 Linear Stream (%s).", config.Symbol)
+	log.Printf("WebSocket connected to TradingView stream (%s).", config.Symbol)
 	s.state.SetConnected(true)
 
-	// Subscribe to topics
-	subMsg := map[string]interface{}{
-		"op": "subscribe",
-		"args": []string{
-			"tickers." + config.Symbol,
-			"publicTrade." + config.Symbol,
-			"kline.5." + config.Symbol,
-			"orderbook.1." + config.Symbol,
-		},
-	}
-	if err := conn.WriteJSON(subMsg); err != nil {
-		return fmt.Errorf("subscribe failed: %w", err)
+	// Read initial connection handshake
+	_, _, err = conn.ReadMessage()
+	if err != nil {
+		return fmt.Errorf("initial handshake read failed: %w", err)
 	}
 
-	// Ping ticker to keep Bybit connection alive
-	pingTicker := time.NewTicker(20 * time.Second)
-	defer pingTicker.Stop()
+	qs := randomSessionID("qs_")
+	cs := randomSessionID("cs_")
 
-	// Goroutine for periodic Bybit ping
-	go func() {
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			case <-pingTicker.C:
-				_ = conn.WriteJSON(map[string]string{"op": "ping"})
-			}
-		}
-	}()
+	sendMessage := func(m string, p []interface{}) error {
+		msg := formatMessage(m, p)
+		return conn.WriteMessage(websocket.TextMessage, []byte(msg))
+	}
+
+	// Initialize TradingView session & subscribe to symbol and series
+	if err := sendMessage("set_auth_token", []interface{}{"unauthorized_user_token"}); err != nil {
+		return err
+	}
+	if err := sendMessage("chart_create_session", []interface{}{cs, ""}); err != nil {
+		return err
+	}
+	if err := sendMessage("quote_create_session", []interface{}{qs}); err != nil {
+		return err
+	}
+	if err := sendMessage("quote_set_fields", []interface{}{
+		qs, "lp", "ch", "chp", "open_price", "high_price", "low_price", "prev_close_price", "bid", "ask",
+	}); err != nil {
+		return err
+	}
+	if err := sendMessage("quote_add_symbols", []interface{}{qs, config.Symbol}); err != nil {
+		return err
+	}
+	if err := sendMessage("resolve_symbol", []interface{}{
+		cs, "sds_sym_1", "={\"symbol\":\"" + config.Symbol + "\",\"adjustment\":\"splits\"}",
+	}); err != nil {
+		return err
+	}
+	if err := sendMessage("create_series", []interface{}{
+		cs, "sds_1", "s1", "sds_sym_1", "5", 30, "",
+	}); err != nil {
+		return err
+	}
 
 	for {
 		select {
@@ -115,61 +150,110 @@ func (s *Streamer) connectAndStream(ctx context.Context) error {
 		}
 
 		_ = conn.SetReadDeadline(time.Now().Add(30 * time.Second))
-		_, msg, err := conn.ReadMessage()
+		_, raw, err := conn.ReadMessage()
 		if err != nil {
 			return fmt.Errorf("read error: %w", err)
 		}
 
-		var wsMsg market.BybitWsMessage
-		if err := json.Unmarshal(msg, &wsMsg); err != nil {
+		str := string(raw)
+
+		// Handle heartbeat ping
+		if strings.HasPrefix(str, "~m~") && strings.Contains(str, "~h~") {
+			_ = conn.WriteMessage(websocket.TextMessage, raw)
 			continue
 		}
 
-		topic := strings.ToLower(wsMsg.Topic)
-
-		if strings.HasPrefix(topic, "tickers") {
-			var ticker market.BybitTickerData
-			if err := json.Unmarshal(wsMsg.Data, &ticker); err == nil {
-				if lp, err := strconv.ParseFloat(ticker.LastPrice, 64); err == nil && lp > 0 {
-					s.state.UpdateTradeTick(lp)
+		parts := strings.Split(str, "~m~")
+		for _, part := range parts {
+			if len(part) == 0 {
+				continue
+			}
+			if strings.HasPrefix(part, "~h~") {
+				resp := fmt.Sprintf("~m~%d~m~%s", len(part), part)
+				_ = conn.WriteMessage(websocket.TextMessage, []byte(resp))
+				continue
+			}
+			if strings.HasPrefix(part, "{") {
+				var pkt struct {
+					M string          `json:"m"`
+					P json.RawMessage `json:"p"`
 				}
-				bid, err1 := strconv.ParseFloat(ticker.Bid1Price, 64)
-				ask, err2 := strconv.ParseFloat(ticker.Ask1Price, 64)
-				if err1 == nil && err2 == nil && bid > 0 && ask > 0 {
-					s.state.UpdateBookTick(bid, ask)
+				if err := json.Unmarshal([]byte(part), &pkt); err == nil {
+					s.handlePacket(pkt.M, pkt.P)
 				}
 			}
-		} else if strings.HasPrefix(topic, "publictrade") {
-			var trades []market.BybitTradeData
-			if err := json.Unmarshal(wsMsg.Data, &trades); err == nil {
-				for _, tr := range trades {
-					if p, err := strconv.ParseFloat(tr.Price, 64); err == nil && p > 0 {
-						s.state.UpdateTradeTick(p)
+		}
+	}
+}
+
+func (s *Streamer) handlePacket(method string, payload json.RawMessage) {
+	switch method {
+	case "qsd":
+		var params []json.RawMessage
+		if err := json.Unmarshal(payload, &params); err == nil && len(params) >= 2 {
+			var qData struct {
+				N string              `json:"n"`
+				V market.TVQuoteData `json:"v"`
+			}
+			if err := json.Unmarshal(params[1], &qData); err == nil {
+				v := qData.V
+				s.state.UpdateQuote(v.Lp, v.Ch, v.Chp, v.Bid, v.Ask, v.Open, v.PrevClose)
+			}
+		}
+
+	case "timescale_update":
+		var params []json.RawMessage
+		if err := json.Unmarshal(payload, &params); err == nil && len(params) >= 2 {
+			var seriesData map[string]struct {
+				S []struct {
+					I int       `json:"i"`
+					V []float64 `json:"v"`
+				} `json:"s"`
+			}
+			if err := json.Unmarshal(params[1], &seriesData); err == nil {
+				if s1, ok := seriesData["sds_1"]; ok && len(s1.S) > 0 {
+					var candles []market.CandleBar
+					for _, item := range s1.S {
+						if len(item.V) >= 5 {
+							candles = append(candles, market.CandleBar{
+								Timestamp: int64(item.V[0]),
+								Open:      item.V[1],
+								High:      item.V[2],
+								Low:       item.V[3],
+								Close:     item.V[4],
+								Volume:    item.V[5],
+							})
+						}
+					}
+					if len(candles) > 0 {
+						s.state.SetCandles(candles)
 					}
 				}
 			}
-		} else if strings.HasPrefix(topic, "orderbook") {
-			var ob market.BybitOrderbookData
-			if err := json.Unmarshal(wsMsg.Data, &ob); err == nil {
-				var bid, ask float64
-				if len(ob.Bids) > 0 && len(ob.Bids[0]) > 0 {
-					bid, _ = strconv.ParseFloat(ob.Bids[0][0], 64)
-				}
-				if len(ob.Asks) > 0 && len(ob.Asks[0]) > 0 {
-					ask, _ = strconv.ParseFloat(ob.Asks[0][0], 64)
-				}
-				if bid > 0 && ask > 0 {
-					s.state.UpdateBookTick(bid, ask)
-				}
+		}
+
+	case "du":
+		var params []json.RawMessage
+		if err := json.Unmarshal(payload, &params); err == nil && len(params) >= 2 {
+			var seriesData map[string]struct {
+				S []struct {
+					I int       `json:"i"`
+					V []float64 `json:"v"`
+				} `json:"s"`
 			}
-		} else if strings.HasPrefix(topic, "kline") {
-			var klines []market.BybitKlineData
-			if err := json.Unmarshal(wsMsg.Data, &klines); err == nil && len(klines) > 0 {
-				latest := klines[len(klines)-1]
-				openP, _ := strconv.ParseFloat(latest.Open, 64)
-				closeP, _ := strconv.ParseFloat(latest.Close, 64)
-				if openP > 0 && closeP > 0 {
-					s.state.UpdateCandle(openP, closeP)
+			if err := json.Unmarshal(params[1], &seriesData); err == nil {
+				if s1, ok := seriesData["sds_1"]; ok && len(s1.S) > 0 {
+					item := s1.S[len(s1.S)-1]
+					if len(item.V) >= 5 {
+						s.state.UpdateLastCandle(market.CandleBar{
+							Timestamp: int64(item.V[0]),
+							Open:      item.V[1],
+							High:      item.V[2],
+							Low:       item.V[3],
+							Close:     item.V[4],
+							Volume:    item.V[5],
+						})
+					}
 				}
 			}
 		}

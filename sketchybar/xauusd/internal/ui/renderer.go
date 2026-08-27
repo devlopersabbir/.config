@@ -44,23 +44,26 @@ func (r *Renderer) Start(ctx context.Context) {
 
 // Render formats and publishes the latest market state to SketchyBar with individual bar coloring.
 func (r *Renderer) Render(snap market.Snapshot) {
-	candleChange := indicator.CalculateCandleChange(snap.Price, snap.CandleOpen)
+	pctChange := snap.ChangePct
+	if pctChange == 0 && snap.CandleOpen > 0 {
+		pctChange = indicator.CalculateCandleChange(snap.Price, snap.CandleOpen)
+	}
 
-	// Determine direction arrow
+	// Determine direction arrow based on price change
 	arrow := "▲"
-	if snap.Direction == "DOWN" {
+	if pctChange < -0.0001 {
 		arrow = "▼"
-	} else if snap.Direction == "UP" {
+	} else if pctChange > 0.0001 {
 		arrow = "▲"
-	} else if candleChange < -0.0001 {
-		arrow = "▼"
+	} else {
+		arrow = "•"
 	}
 
 	// Change color: only % and arrow change color for bearish/bullish
 	changeColor := config.ColorNeutral
-	if candleChange > 0.0001 {
+	if pctChange > 0.0001 {
 		changeColor = config.ColorGreen
-	} else if candleChange < -0.0001 {
+	} else if pctChange < -0.0001 {
 		changeColor = config.ColorRed
 	}
 
@@ -71,7 +74,7 @@ func (r *Renderer) Render(snap market.Snapshot) {
 	candleBars := indicator.ComputeCandleBars(snap.Candles, snap.Price, snap.CandleOpen, config.NumCandleBars)
 
 	priceStr := fmt.Sprintf("$%.2f", snap.Price)
-	changeStr := fmt.Sprintf("%+.2f%% %s", candleChange, arrow)
+	changeStr := fmt.Sprintf("%+.2f%% %s", pctChange, arrow)
 	trendStr := fmt.Sprintf("%s %s", trendIcon, trend)
 
 	// Build atomic SketchyBar update command

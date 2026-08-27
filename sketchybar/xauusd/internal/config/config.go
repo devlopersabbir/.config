@@ -3,22 +3,20 @@ package config
 import "time"
 
 const (
-	// Symbol is the target asset: Gold / US Dollar Perpetual (XAUUSDT)
-	Symbol = "XAUUSDT"
+	// Target Asset: Gold Spot / U.S. Dollar (OANDA:XAUUSD)
+	Symbol        = "OANDA:XAUUSD"
+	SymbolDisplay = "XAU/USD"
 
-	// WsURL is the Bybit V5 Public Linear WebSocket endpoint for sub-second live market ticks
-	WsURL = "wss://stream.bybit.com/v5/public/linear"
+	// WsURL is the TradingView live real-time WebSocket endpoint
+	WsURL = "wss://data.tradingview.com/socket.io/websocket"
 
-	// OhlcURL is the Bybit V5 REST API for 5m candle analytical data & historical chart
-	OhlcURL = "https://api.bybit.com/v5/market/kline?category=linear&symbol=XAUUSDT&interval=5&limit=30"
-
-	// TickerURL is the Bybit V5 REST API for 24h ticker snapshot
-	TickerURL = "https://api.bybit.com/v5/market/tickers?category=linear&symbol=XAUUSDT"
+	// ScannerURL is the TradingView REST CFD scanner endpoint for analytical snapshots & fallback
+	ScannerURL = "https://scanner.tradingview.com/cfd/scan"
 
 	// CacheFile is the local cache path for SketchyBar plugin scripts
 	CacheFile = "/tmp/sketchybar_gold_price"
 
-	// AnalysisRefresh is the background interval for refreshing 5m OHLC analytical data
+	// AnalysisRefresh is the background interval for refreshing analytical data
 	AnalysisRefresh = 30 * time.Second
 
 	// MinRenderInterval is the throttling interval between SketchyBar CLI updates

@@ -1,19 +1,19 @@
 package analysis
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"io"
 	"log"
 	"net/http"
-	"strconv"
 	"time"
 
 	"xauusd/internal/config"
 	"xauusd/internal/market"
 )
 
-// Analyzer manages periodic OHLC candle fetching from Bybit V5 REST API.
+// Analyzer manages periodic OHLC candle & CFD scanner data from TradingView REST API.
 type Analyzer struct {
 	state  *market.State
 	client *http.Client
@@ -24,7 +24,7 @@ func NewAnalyzer(state *market.State) *Analyzer {
 	return &Analyzer{
 		state: state,
 		client: &http.Client{
-			Timeout: 5 * time.Second,
+			Timeout: 6 * time.Second,
 		},
 	}
 }
@@ -47,24 +47,30 @@ func (a *Analyzer) Start(ctx context.Context) {
 	}
 }
 
-// Refresh fetches the latest 5m OHLC klines from Bybit V5 REST API.
+// Refresh fetches the latest market snapshot from TradingView CFD scanner.
 func (a *Analyzer) Refresh(ctx context.Context) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, config.OhlcURL, nil)
+	payload := []byte(`{
+		"symbols": {"tickers": ["` + config.Symbol + `"]},
+		"columns": ["close", "change", "change_abs", "open", "high", "low", "Recommend.All", "open|5", "high|5", "low|5", "close|5"]
+	}`)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, config.ScannerURL, bytes.NewBuffer(payload))
 	if err != nil {
-		log.Printf("Bybit OHLC request creation failed: %v", err)
+		log.Printf("TradingView scanner request creation failed: %v", err)
 		return
 	}
-	req.Header.Set("User-Agent", "Mozilla/5.0")
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)")
+	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := a.client.Do(req)
 	if err != nil {
-		log.Printf("Bybit OHLC fetch error: %v", err)
+		log.Printf("TradingView scanner fetch error: %v", err)
 		return
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		log.Printf("Bybit OHLC HTTP error: %d", resp.StatusCode)
+		log.Printf("TradingView scanner HTTP error: %d", resp.StatusCode)
 		return
 	}
 
@@ -73,49 +79,39 @@ func (a *Analyzer) Refresh(ctx context.Context) {
 		return
 	}
 
-	var bybitResp struct {
-		RetCode int    `json:"retCode"`
-		RetMsg  string `json:"retMsg"`
-		Result  struct {
-			Symbol string     `json:"symbol"`
-			List   [][]string `json:"list"`
-		} `json:"result"`
-	}
-
-	if err := json.Unmarshal(body, &bybitResp); err != nil {
-		log.Printf("Bybit OHLC decode error: %v", err)
+	var sr market.ScannerResponse
+	if err := json.Unmarshal(body, &sr); err != nil {
+		log.Printf("TradingView scanner decode error: %v", err)
 		return
 	}
 
-	rawList := bybitResp.Result.List
-	if len(rawList) == 0 {
+	if len(sr.Data) == 0 || len(sr.Data[0].D) < 6 {
 		return
 	}
 
-	// Bybit returns klines in reverse chronological order (newest first).
-	// We reverse them so the oldest is at index 0 and latest is at the end.
-	var candles []market.CandleBar
-	for i := len(rawList) - 1; i >= 0; i-- {
-		bar := rawList[i]
-		if len(bar) >= 5 {
-			o, err1 := strconv.ParseFloat(bar[1], 64)
-			h, err2 := strconv.ParseFloat(bar[2], 64)
-			l, err3 := strconv.ParseFloat(bar[3], 64)
-			c, err4 := strconv.ParseFloat(bar[4], 64)
+	d := sr.Data[0].D
+	closePrice := toFloat(d[0])
+	chPct := toFloat(d[1])
+	chAbs := toFloat(d[2])
+	openPrice := toFloat(d[3])
 
-			if err1 == nil && err2 == nil && err3 == nil && err4 == nil && o > 0 && c > 0 {
-				candles = append(candles, market.CandleBar{
-					Open:  o,
-					High:  h,
-					Low:   l,
-					Close: c,
-				})
-			}
-		}
+	if closePrice > 0 {
+		a.state.UpdateQuote(&closePrice, &chAbs, &chPct, nil, nil, &openPrice, nil)
+		log.Printf("TradingView analysis refreshed: %s spot price $%.3f (%+.2f%%)", config.Symbol, closePrice, chPct)
 	}
+}
 
-	if len(candles) > 0 {
-		a.state.SetAnalysisCandles(candles)
-		log.Printf("Bybit 5m analysis refreshed: %d candles loaded for %s", len(candles), config.Symbol)
+func toFloat(val interface{}) float64 {
+	switch v := val.(type) {
+	case float64:
+		return v
+	case float32:
+		return float64(v)
+	case int:
+		return float64(v)
+	case int64:
+		return float64(v)
+	default:
+		return 0
 	}
 }
