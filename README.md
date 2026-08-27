@@ -20,6 +20,19 @@ git clone https://github.com/devlopersabbir/.config.git ~/.config && bash ~/.con
 
 ---
 
+## 🗑 Uninstallation (Interactive per-tool prompt)
+
+To safely remove any or all installed tools with individual `(y/N)` confirmation prompts:
+
+```bash
+bash ~/.config/scripts/uninstall.sh
+```
+
+> [!NOTE]
+> Every tool (Yabai, Skhd, SketchyBar, Neovim plugins, Tmux, Oh My Zsh, Flameshot, Fonts) requires your explicit `y` confirmation before removal. Default is always **No (`N`)**.
+
+---
+
 ## 🛠 What Gets Installed & Configured
 
 | Component | Description |
@@ -110,7 +123,8 @@ After running the setup script, ensure macOS permissions are enabled:
 .config/
 ├── README.md              # Documentation and keybinding reference
 ├── scripts/
-│   └── setup.sh           # One-command automated installation script
+│   ├── setup.sh           # One-command automated installation script
+│   └── uninstall.sh       # Interactive per-tool uninstallation script
 ├── yabai/
 │   ├── yabairc            # Yabai window manager configuration
 │   └── scripts/           # Space creation and window helper scripts
