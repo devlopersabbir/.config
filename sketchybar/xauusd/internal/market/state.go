@@ -1,8 +1,12 @@
 package market
 
 import (
+	"encoding/json"
+	"os"
 	"sync"
 	"time"
+
+	"xauusd/internal/config"
 )
 
 // State represents the thread-safe global market state.
@@ -25,11 +29,23 @@ type State struct {
 	PendingRender bool
 }
 
-// NewState initializes a new State instance.
+// NewState initializes a new State instance with disk-cached candles.
 func NewState() *State {
-	return &State{
+	s := &State{
 		Direction: "FLAT",
 	}
+
+	// Restore cached candles for 0ms instant startup rendering
+	cachedCandles := loadCandlesFromDisk()
+	if len(cachedCandles) > 0 {
+		s.Candles = cachedCandles
+		s.CandleOpen = cachedCandles[len(cachedCandles)-1].Open
+		s.Price = cachedCandles[len(cachedCandles)-1].Close
+		s.Connected = true
+		s.PendingRender = true
+	}
+
+	return s
 }
 
 // UpdateQuote updates the state with live quote fields received from TradingView.
@@ -91,7 +107,7 @@ func (s *State) UpdateQuote(lp, ch, chp, bid, ask, open, prevClose *float64) {
 	s.PendingRender = true
 }
 
-// SetCandles updates or replaces historical OHLC analysis candles.
+// SetCandles updates or replaces historical OHLC analysis candles and saves them to disk.
 func (s *State) SetCandles(candles []CandleBar) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -104,6 +120,7 @@ func (s *State) SetCandles(candles []CandleBar) {
 		if s.CandleOpen <= 0 {
 			s.CandleOpen = candles[len(candles)-1].Open
 		}
+		saveCandlesToDisk(s.Candles)
 	}
 	s.PendingRender = true
 }
@@ -130,6 +147,7 @@ func (s *State) UpdateLastCandle(candle CandleBar) {
 		s.Price = candle.Close
 	}
 
+	saveCandlesToDisk(s.Candles)
 	s.PendingRender = true
 }
 
@@ -158,7 +176,7 @@ func (s *State) PrepareRender() Snapshot {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	shouldRender := s.PendingRender && s.Connected && s.Price > 0
+	shouldRender := s.PendingRender && s.Price > 0
 	if shouldRender {
 		s.PendingRender = false
 		s.LastRender = time.Now()
@@ -185,4 +203,27 @@ func (s *State) GetPrice() (float64, bool) {
 	defer s.mu.RUnlock()
 
 	return s.Price, s.Connected
+}
+
+func loadCandlesFromDisk() []CandleBar {
+	data, err := os.ReadFile(config.CandleCacheFile)
+	if err != nil {
+		return nil
+	}
+	var candles []CandleBar
+	if err := json.Unmarshal(data, &candles); err != nil {
+		return nil
+	}
+	return candles
+}
+
+func saveCandlesToDisk(candles []CandleBar) {
+	if len(candles) == 0 {
+		return
+	}
+	data, err := json.Marshal(candles)
+	if err != nil {
+		return
+	}
+	_ = os.WriteFile(config.CandleCacheFile, data, 0644)
 }

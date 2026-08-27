@@ -16,6 +16,15 @@ const (
 	// CacheFile is the local cache path for SketchyBar plugin scripts
 	CacheFile = "/tmp/sketchybar_gold_price"
 
+	// CandleCacheFile stores persistent candlestick bars across restarts
+	CandleCacheFile = "/tmp/sketchybar_gold_candles.json"
+
+	// KlineRESTURL is the primary REST endpoint for 5m gold OHLC candles
+	KlineRESTURL = "https://api.bybit.com/v5/market/kline?category=linear&symbol=XAUUSDT&interval=5&limit=30"
+
+	// KlineBackupRESTURL is the secondary backup REST endpoint for 5m gold OHLC candles
+	KlineBackupRESTURL = "https://api.binance.com/api/v3/klines?symbol=PAXGUSDT&interval=5m&limit=30"
+
 	// AnalysisRefresh is the background interval for refreshing analytical data
 	AnalysisRefresh = 30 * time.Second
 

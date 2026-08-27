@@ -2,10 +2,11 @@ package streamer
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"log"
-	"math/rand"
 	"net/http"
 	"strings"
 	"time"
@@ -38,8 +39,6 @@ func (s *Streamer) Start(ctx context.Context) {
 		default:
 		}
 
-		log.Printf("Connecting to TradingView live stream for %s...", config.Symbol)
-
 		err := s.connectAndStream(ctx)
 
 		if ctx.Err() != nil {
@@ -47,11 +46,10 @@ func (s *Streamer) Start(ctx context.Context) {
 		}
 
 		if err != nil {
-			log.Printf("TradingView stream error: %v", err)
+			log.Printf("TradingView stream notice: %v", err)
 		}
 
 		s.state.SetConnected(false)
-		log.Printf("Reconnecting in %s...", backoff)
 
 		select {
 		case <-ctx.Done():
@@ -66,12 +64,9 @@ func (s *Streamer) Start(ctx context.Context) {
 }
 
 func randomSessionID(prefix string) string {
-	const letters = "abcdefghijklmnopqrstuvwxyz0123456789"
-	b := make([]byte, 12)
-	for i := range b {
-		b[i] = letters[rand.Intn(len(letters))]
-	}
-	return prefix + string(b)
+	b := make([]byte, 6)
+	_, _ = rand.Read(b)
+	return prefix + hex.EncodeToString(b)
 }
 
 func formatMessage(m string, p []interface{}) string {
@@ -96,7 +91,6 @@ func (s *Streamer) connectAndStream(ctx context.Context) error {
 	}
 	defer conn.Close()
 
-	log.Printf("WebSocket connected to TradingView stream (%s).", config.Symbol)
 	s.state.SetConnected(true)
 
 	// Read initial connection handshake
@@ -215,13 +209,17 @@ func (s *Streamer) handlePacket(method string, payload json.RawMessage) {
 					var candles []market.CandleBar
 					for _, item := range s1.S {
 						if len(item.V) >= 5 {
+							vol := 0.0
+							if len(item.V) > 5 {
+								vol = item.V[5]
+							}
 							candles = append(candles, market.CandleBar{
 								Timestamp: int64(item.V[0]),
 								Open:      item.V[1],
 								High:      item.V[2],
 								Low:       item.V[3],
 								Close:     item.V[4],
-								Volume:    item.V[5],
+								Volume:    vol,
 							})
 						}
 					}
@@ -245,13 +243,17 @@ func (s *Streamer) handlePacket(method string, payload json.RawMessage) {
 				if s1, ok := seriesData["sds_1"]; ok && len(s1.S) > 0 {
 					item := s1.S[len(s1.S)-1]
 					if len(item.V) >= 5 {
+						vol := 0.0
+						if len(item.V) > 5 {
+							vol = item.V[5]
+						}
 						s.state.UpdateLastCandle(market.CandleBar{
 							Timestamp: int64(item.V[0]),
 							Open:      item.V[1],
 							High:      item.V[2],
 							Low:       item.V[3],
 							Close:     item.V[4],
-							Volume:    item.V[5],
+							Volume:    vol,
 						})
 					}
 				}
@@ -259,3 +261,4 @@ func (s *Streamer) handlePacket(method string, payload json.RawMessage) {
 		}
 	}
 }
+

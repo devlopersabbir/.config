@@ -26,7 +26,11 @@ func ComputeCandleBars(candles []market.CandleBar, currentPrice, currentOpen flo
 
 	if len(candles) == 0 {
 		for i := 0; i < count; i++ {
-			result[i] = CandleBarView{Char: " ", Color: config.ColorMuted}
+			char := " "
+			if currentPrice > 0 {
+				char = "▄"
+			}
+			result[i] = CandleBarView{Char: char, Color: config.ColorMuted}
 		}
 		return result
 	}
