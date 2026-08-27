@@ -40,6 +40,9 @@ alt - f : run-external "open" "-a" `/Applications/Final Cut Pro.app/Contents/Mac
 # Ghostty terminal
 alt - g : run-external "open" "-a" "/Applications/Ghostty.app"
 
+# Flameshot (Take Screenshot)
+cmd + shift - x : /Applications/flameshot.app/Contents/MacOS/flameshot gui
+
 
 
 ############################
@@ -68,8 +71,8 @@ shift + cmd - r : yabai -m space --rotate 270
 # flip along y-axis
 shift + cmd - y : yabai -m space --mirror y-axis
 
-# flip along x-axis
-shift + cmd - x : yabai -m space --mirror x-axis
+# flip along x-axis (commented out to avoid conflict with Flameshot screenshot shortcut cmd+shift+x)
+# shift + cmd - x : yabai -m space --mirror x-axis
 
 # balance out tree of windows (resize to occupy same area)
 shift + cmd - e : yabai -m space --balance

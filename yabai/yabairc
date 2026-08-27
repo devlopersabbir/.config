@@ -31,6 +31,7 @@ yabai -m mouse_drop_action swap
 yabai -m rule --add app="^System Settings$" manage=off
 yabai -m rule --add app="^Calculator$" manage=off
 yabai -m rule --add app="^Karabiner-Elements$" manage=off
+yabai -m rule --add app="^[Ff]lameshot$" manage=off sticky=on sub-layer=above
 
 # Automatically ensure 10 workspaces on startup
 "$HOME/.config/yabai/scripts/space_nav.sh" ensure &
