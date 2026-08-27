@@ -11,6 +11,7 @@ TEXT_MUTED=0xff737994
 BG_ITEM=0x25313244
 BG_ITEM_CONTAINER=0x40313244
 
+
 ############## BAR CONFIGURATION ##############
 sketchybar --bar \
   height=32 \
@@ -25,6 +26,7 @@ sketchybar --bar \
   sticky=on \
   font_smoothing=on
 
+
 ############## GLOBAL DEFAULTS ##############
 sketchybar --default \
   updates=when_shown \
@@ -35,8 +37,8 @@ sketchybar --default \
   label.font="JetBrainsMono Nerd Font:SemiBold:12.0" \
   label.color=$TEXT_COLOR
 
-############## LEFT: SPACES (1, 2, 3, 4...) ##############
-# Adds space items for spaces 1-10; SketchyBar automatically associates and draws existing spaces
+
+############## LEFT: SPACES ##############
 for sid in 1 2 3 4 5 6 7 8 9 10; do
   sketchybar --add space space.$sid left \
     --set space.$sid \
@@ -56,6 +58,7 @@ for sid in 1 2 3 4 5 6 7 8 9 10; do
       script="$CONFIG_DIR/plugins/space.sh"
 done
 
+
 ############## MIDDLE: TIME ##############
 sketchybar --add item clock center \
   --set clock \
@@ -73,6 +76,7 @@ sketchybar --add item clock center \
     background.height=26 \
     update_freq=5 \
     script="$CONFIG_DIR/plugins/clock.sh"
+
 
 ############## RIGHT: DISK USAGE ##############
 sketchybar --add item disk right \
@@ -96,6 +100,7 @@ sketchybar --add item disk right \
     update_freq=30 \
     script="$CONFIG_DIR/plugins/disk.sh"
 
+
 ############## RIGHT: RAM USAGE ##############
 sketchybar --add item ram right \
   --set ram \
@@ -117,6 +122,7 @@ sketchybar --add item ram right \
     background.padding_right=4 \
     update_freq=3 \
     script="$CONFIG_DIR/plugins/ram.sh"
+
 
 ############## RIGHT: CPU USAGE ##############
 sketchybar --add item cpu right \
@@ -140,29 +146,13 @@ sketchybar --add item cpu right \
     update_freq=2 \
     script="$CONFIG_DIR/plugins/cpu.sh"
 
-############## RIGHT: BTC PRICE ##############
-sketchybar --add item btc right \
-  --set btc \
-    icon= \
-    icon.color=0xfff7931a \
-    icon.font="JetBrainsMono Nerd Font:Bold:13.0" \
-    icon.padding_left=8 \
-    icon.padding_right=4 \
-    label="---" \
-    label.font="JetBrainsMono Nerd Font:Bold:11.0" \
-    label.color=$TEXT_COLOR \
-    label.padding_left=2 \
-    label.padding_right=8 \
-    background.drawing=on \
-    background.color=$BG_ITEM_CONTAINER \
-    background.corner_radius=8 \
-    background.height=26 \
-    background.padding_left=4 \
-    background.padding_right=4 \
-    update_freq=1 \
-    script="$CONFIG_DIR/plugins/btc.sh"
 
 ############## RIGHT: GOLD PRICE ##############
+
+# IMPORTANT:
+# Gold is updated in real time by the Go market daemon (xauusd),
+# receiving continuous sub-second live WebSocket market ticks.
+
 sketchybar --add item gold right \
   --set gold \
     icon=󰆚 \
@@ -170,7 +160,7 @@ sketchybar --add item gold right \
     icon.font="JetBrainsMono Nerd Font:Bold:13.0" \
     icon.padding_left=8 \
     icon.padding_right=4 \
-    label="---" \
+    label="🥇 Connecting..." \
     label.font="JetBrainsMono Nerd Font:Bold:11.0" \
     label.color=$TEXT_COLOR \
     label.padding_left=2 \
@@ -181,14 +171,22 @@ sketchybar --add item gold right \
     background.height=26 \
     background.padding_left=4 \
     background.padding_right=4 \
-    update_freq=1 \
     script="$CONFIG_DIR/plugins/gold.sh"
 
-############## START LIVE STREAM DAEMON (WATCHING MODE) ##############
-"$CONFIG_DIR/plugins/live_stream.sh" &
+
+############## START XAUUSD GO MARKET DAEMON ##############
+
+# Kill any previous instance or old streaming daemons.
+pkill -f "$CONFIG_DIR/xauusd/xauusd" 2>/dev/null || true
+pkill -f "$CONFIG_DIR/plugins/live_stream.py" 2>/dev/null || true
+pkill -f "gold_stream.sh" 2>/dev/null || true
+
+# Start Go market engine.
+"$CONFIG_DIR/xauusd/xauusd" \
+  >> /tmp/xauusd.log \
+  2>&1 &
+
 
 ############## FINALIZE CONFIGURATION ##############
 sketchybar --update
-
 echo "SketchyBar configuration loaded successfully."
-
