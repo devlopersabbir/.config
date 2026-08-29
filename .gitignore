@@ -1,15 +1,105 @@
-aerospace
-fish
-starship
-cagent
-github-copilot
-configstore
-hammerspoon
-nix
-wezterm
-container
-htop
-nx-darwin
-filezilla
-nushell ssh zellij
-vpsm
+# ==============================================================================
+# Security & Secret Protection (.gitignore)
+# Prevents accidental exposure of keys, tokens, credentials, and runtime sockets
+# ==============================================================================
+
+# --- Secrets, Credentials & Tokens ---
+*.env
+*.env.*
+.env
+.env.*
+*.secret
+*.secrets
+*.token
+*.tokens
+*.credentials
+*.key
+*.pem
+*.p12
+*.pfx
+*.crt
+*.cer
+id_rsa*
+id_ed25519*
+id_dsa*
+id_ecdsa*
+*.pub
+.netrc
+.npmrc
+.pypirc
+auth.json
+token.json
+credentials.json
+
+# --- CLI Tools, Auth Caches & Secret Directories ---
+gh/hosts.yml
+github-copilot/
+configstore/
+atuin/
+vpsm/
+containers/
+cagent/
+gcloud/
+aws/
+azure/
+stripe/
+supabase/
+vercel/
+netlify/
+1password/
+bitwarden/
+op/
+sops/
+filezilla/
+runtimedev-link/
+recall/
+
+# --- Local & Ignored Tools Configurations ---
+aerospace/
+fish/
+starship/
+hammerspoon/
+nix/
+nix-darwin/
+nx-darwin/
+wezterm/
+htop/
+nushell/
+ssh/
+zellij/
+iterm2/
+karabiner/
+kindavim/
+
+# --- Sockets & Runtime Files ---
+*.sock
+*.socket
+sockets/
+**/sockets/**
+
+# --- Compiled Binaries & Build Artifacts ---
+sketchybar/xauusd/xauusd
+*.exe
+*.out
+*.o
+*.a
+*.dylib
+*.so
+
+# --- Logs, PIDs & Caches ---
+*.log
+*.out
+*.pid
+/tmp/*
+.cache/
+.local/
+*.swp
+*.swo
+*~
+*.bak
+
+# --- macOS System Files ---
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
