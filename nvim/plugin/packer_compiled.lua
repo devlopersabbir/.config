@@ -85,7 +85,7 @@ _G.packer_plugins = {
     url = "https://github.com/L3MON4D3/LuaSnip"
   },
   ["antigravity-cli.nvim"] = {
-    config = { "\27LJ\2\n·\2\0\0\5\0\r\1\0306\0\0\0009\0\1\0009\0\2\0'\2\3\0B\0\2\2\a\0\4\0X\1\15€6\1\0\0009\1\1\0019\1\5\1'\3\6\0B\1\2\0026\2\0\0009\2\1\0029\2\a\2\18\4\1\0B\2\2\2\t\2\0\0X\2\2€\18\0\1\0X\2\1€'\0\3\0006\1\b\0'\3\t\0B\1\2\0029\1\n\0015\3\v\0=\0\f\3B\1\2\1K\0\1\0\bcmd\1\0\6\17height_ratio\4š³æÌ\t™³æþ\3\16width_ratio\4æÌ™³\6æÌÙþ\3\rposition\nright\bcmd\0\nstyle\vvsplit\vborder\frounded\nsetup\16antigravity\frequire\15executable\21~/.local/bin/agy\vexpand\5\bagy\fexepath\afn\bvim\2\0" },
+    config = { "\27LJ\2\n·\2\0\0\5\0\r\1\0306\0\0\0009\0\1\0009\0\2\0'\2\3\0B\0\2\2\a\0\4\0X\1\15€6\1\0\0009\1\1\0019\1\5\1'\3\6\0B\1\2\0026\2\0\0009\2\1\0029\2\a\2\18\4\1\0B\2\2\2\t\2\0\0X\2\2€\18\0\1\0X\2\1€'\0\3\0006\1\b\0'\3\t\0B\1\2\0029\1\n\0015\3\v\0=\0\f\3B\1\2\1K\0\1\0\bcmd\1\0\6\vborder\frounded\nstyle\vvsplit\bcmd\0\17height_ratio\4š³æÌ\t™³æþ\3\16width_ratio\4æÌ™³\6æÌÙþ\3\rposition\nright\nsetup\16antigravity\frequire\15executable\21~/.local/bin/agy\vexpand\5\bagy\fexepath\afn\bvim\2\0" },
     loaded = true,
     path = "/Users/anonymous/.local/share/nvim/site/pack/packer/start/antigravity-cli.nvim",
     url = "https://github.com/NakLast/antigravity-cli.nvim"
@@ -224,7 +224,7 @@ try_loadstring("\27LJ\2\nA\0\0\3\0\3\0\a6\0\0\0'\2\1\0B\0\2\0029\0\2\0004\2\0\0B
 time([[Config for supermaven-nvim]], false)
 -- Config for: antigravity-cli.nvim
 time([[Config for antigravity-cli.nvim]], true)
-try_loadstring("\27LJ\2\n·\2\0\0\5\0\r\1\0306\0\0\0009\0\1\0009\0\2\0'\2\3\0B\0\2\2\a\0\4\0X\1\15€6\1\0\0009\1\1\0019\1\5\1'\3\6\0B\1\2\0026\2\0\0009\2\1\0029\2\a\2\18\4\1\0B\2\2\2\t\2\0\0X\2\2€\18\0\1\0X\2\1€'\0\3\0006\1\b\0'\3\t\0B\1\2\0029\1\n\0015\3\v\0=\0\f\3B\1\2\1K\0\1\0\bcmd\1\0\6\17height_ratio\4š³æÌ\t™³æþ\3\16width_ratio\4æÌ™³\6æÌÙþ\3\rposition\nright\bcmd\0\nstyle\vvsplit\vborder\frounded\nsetup\16antigravity\frequire\15executable\21~/.local/bin/agy\vexpand\5\bagy\fexepath\afn\bvim\2\0", "config", "antigravity-cli.nvim")
+try_loadstring("\27LJ\2\n·\2\0\0\5\0\r\1\0306\0\0\0009\0\1\0009\0\2\0'\2\3\0B\0\2\2\a\0\4\0X\1\15€6\1\0\0009\1\1\0019\1\5\1'\3\6\0B\1\2\0026\2\0\0009\2\1\0029\2\a\2\18\4\1\0B\2\2\2\t\2\0\0X\2\2€\18\0\1\0X\2\1€'\0\3\0006\1\b\0'\3\t\0B\1\2\0029\1\n\0015\3\v\0=\0\f\3B\1\2\1K\0\1\0\bcmd\1\0\6\vborder\frounded\nstyle\vvsplit\bcmd\0\17height_ratio\4š³æÌ\t™³æþ\3\16width_ratio\4æÌ™³\6æÌÙþ\3\rposition\nright\nsetup\16antigravity\frequire\15executable\21~/.local/bin/agy\vexpand\5\bagy\fexepath\afn\bvim\2\0", "config", "antigravity-cli.nvim")
 time([[Config for antigravity-cli.nvim]], false)
 -- Config for: dressing.nvim
 time([[Config for dressing.nvim]], true)

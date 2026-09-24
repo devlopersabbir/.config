@@ -103,3 +103,9 @@ sketchybar/xauusd/xauusd
 .AppleDouble
 .LSOverride
 ._*
+
+# --- Remove Unnessary Files ---
+termlink
+wireshark
+zed
+flameshot
